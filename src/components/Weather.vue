@@ -33,7 +33,7 @@ export default {
     submitCity() {
       axios
         .get(
-          `http://api.openweathermap.org/data/2.5/weather?q=San-Antonio&appid=${this.key}&units=imperial`
+          `https://api.openweathermap.org/data/2.5/weather?q=San-Antonio&appid=${this.key}&units=imperial`
         )
         .then(
           (response) => (
