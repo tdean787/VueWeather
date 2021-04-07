@@ -1,6 +1,6 @@
 <template>
-  <div class="home">
-    <Weather />
+  <div :class="background">
+    <Weather v-on:changebackground="test" />
   </div>
 </template>
 
@@ -13,5 +13,24 @@ export default {
   components: {
     Weather,
   },
+  data() {
+    return {
+      background: undefined,
+    };
+  },
+  methods: {
+    test(data) {
+      console.log("emit");
+      console.log(data);
+      this.background = data;
+    },
+  },
 };
 </script>
+
+<style>
+.home {
+  height: 100vh;
+  /* background: lightgreen; */
+}
+</style>
