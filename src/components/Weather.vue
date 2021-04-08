@@ -1,23 +1,24 @@
 <template>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w=="
+    crossorigin="anonymous"
+  />
   <div class="weather" :class="skyBackground">
-    <h3>Weather App</h3>
-    <div class="controls">
-      <form v-on:submit="submitCity">
-        <input
-          type="text"
-          v-model="city"
-          placeholder="Type your city in here"
-        />
-        <button type="submit" @click="submitCity">Get Weather</button>
-      </form>
-    </div>
-
-    <div v-if="currentTemp">
+    <div v-if="locationRetrieved">
+      <h2>{{ apiCity }}</h2>
       <p>Current temperature: {{ currentTemp.temp }} °F</p>
       <p>Feels like: {{ currentTemp.feels_like }} °F</p>
       <p>Humidity: {{ currentTemp.humidity }}%</p>
-      {{ skyBackground }}
+      <p>Sky: {{ skyBackground }}</p>
     </div>
+
+    <form v-on:submit="cityManualEntry">
+      <input type="text" v-model="city" placeholder="Type your city in here" />
+      <button @click="cityManualEntry">Manually Enter City Instead</button>
+    </form>
+    <i @click="getLocation" class="fas fa-location-arrow fa-2x"></i>
   </div>
 </template>
 
@@ -27,26 +28,20 @@ export default {
   name: "Weather",
   data() {
     return {
-      city: localStorage.getItem("city"),
+      city: null,
+      locationRetrieved: false,
       key: process.env.VUE_APP_WEATHER_APIKEY,
       info: null,
       currentTemp: undefined,
       skyBackground: null,
-      jsonData: null,
+      latitude: null,
+      longitude: null,
+      apiCity: null,
     };
   },
   methods: {
-    getLocation() {
-      navigator.geolocation.getCurrentPosition(this.onSuccess, this.onError);
-    },
-    onSuccess: function(position) {
-      const { latitude, longitude } = position.coords;
-      console.log(latitude);
-    },
-    onError() {
-      console.log("error");
-    },
-    async getData() {
+    async cityManualEntry(event) {
+      event.preventDefault();
       await axios
         .get(
           `https://api.openweathermap.org/data/2.5/weather?q=${this.city}&appid=${this.key}&units=imperial`
@@ -55,30 +50,59 @@ export default {
           (response) => (
             (this.info = response.data.weather),
             (this.currentTemp = response.data.main),
-            (this.skyBackground = response.data.weather[0].main)
+            (this.skyBackground = response.data.weather[0].main),
+            (this.apiCity = response.data.name)
+          )
+        )
+        .catch((error) => {
+          alert("Invalid city entered");
+        });
+    },
+    getLocation() {
+      navigator.geolocation.getCurrentPosition(this.onSuccess, this.onError);
+    },
+    onSuccess: function (position) {
+      this.locationRetrieved = true;
+      this.latitude = position.coords.latitude;
+      this.longitude = position.coords.longitude;
+      this.getData();
+    },
+    onError() {
+      console.log("error");
+      alert("error");
+    },
+    async getData() {
+      await axios
+        .get(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${this.latitude}&lon=${this.longitude}&appid=${this.key}&units=imperial`
+        )
+        .then(
+          (response) => (
+            (this.info = response.data.weather),
+            (this.currentTemp = response.data.main),
+            (this.skyBackground = response.data.weather[0].main),
+            (this.apiCity = response.data.name)
           )
         );
-      // console.log(response);
-      // console.log(this.skyBackground);
-    },
-    async submitCity(event) {
-      event.preventDefault();
-      localStorage.setItem("city", this.city);
-      if (this.city === null) {
-        alert("You'll need to enter your city in first.");
-      }
-      await this.getData();
-      this.$emit("changebackground", this.skyBackground);
     },
   },
-  async mounted() {
-    await this.getData();
+  created() {
+    this.getLocation();
     this.$emit("changebackground", this.skyBackground);
   },
 };
 </script>
 
-<style>
+<style scoped>
+p {
+  margin-top: 2em;
+}
+
+i {
+  margin: 1em;
+  display: block;
+  cursor: pointer;
+}
 .weather {
   height: 100vh;
   padding-top: 20px;

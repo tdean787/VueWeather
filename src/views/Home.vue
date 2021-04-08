@@ -20,8 +20,6 @@ export default {
   },
   methods: {
     test(data) {
-      console.log("emit");
-      console.log(data);
       this.background = data;
     },
   },
